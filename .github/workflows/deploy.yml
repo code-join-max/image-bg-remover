@@ -8,23 +8,20 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
     steps:
       - uses: actions/checkout@v4
       
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: 7f89a7f424cc4a66c8edcfc56d6b91da
-          command: pages deploy dist --project-name=image-bg-remover
+          node-version: '20'
           
-      - name: Add REMOVE_BG_API_KEY secret
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: 7f89a7f424cc4a66c8edcfc56d6b91da
-          command: pages secret put REMOVE_BG_API_KEY --project-name=image-bg-remover
-          stdin: ${{ secrets.REMOVE_BG_API_KEY }}
+      - name: Install Wrangler
+        run: npm install -g wrangler
+        
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 7f89a7f424cc4a66c8edcfc56d6b91da
+        run: |
+          wrangler pages deploy public --project-name=image-bg-remover --branch=main --commit-message="GitHub Actions deployment"
