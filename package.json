@@ -8,6 +8,6 @@
     "deploy-prod": "wrangler pages deploy public --branch=main"
   },
   "devDependencies": {
-    "wrangler": "^3.0.0"
+    "wrangler": "^3.114.17"
   }
 }
