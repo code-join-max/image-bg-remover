@@ -1,0 +1,13 @@
+{
+  "name": "image-bg-remover",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev public --compatibility-date=2024-03-18",
+    "deploy": "wrangler pages deploy public",
+    "deploy-prod": "wrangler pages deploy public --branch=main"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

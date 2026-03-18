@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Background Remover - 智能抠图工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 0;
+            color: white;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .upload-area {
+            background: white;
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            border: 3px dashed #ddd;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .upload-area.hidden {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .upload-hint {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .preview-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: none;
+        }
+        
+        .preview-section.active {
+            display: block;
+        }
+        
+        .preview-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .preview-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .preview-box {
+            text-align: center;
+        }
+        
+        .preview-box h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .preview-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            border-radius: 10px;
+            background: repeating-conic-gradient(#f0f0f0 0% 25%, white 0% 50%) 50% / 20px 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            margin-left: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .actions {
+            text-align: center;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .error.active {
+            display: block;
+        }
+        
+        .examples {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-top: 30px;
+        }
+        
+        .examples h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .example-item {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .example-item:hover {
+            transform: scale(1.05);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: white;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Image Background Remover</h1>
+            <p>AI 智能抠图工具 - 一键移除图片背景</p>
+        </header>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📤</div>
+            <div class="upload-text">拖拽图片到这里，或点击选择</div>
+            <div class="upload-hint">支持 JPG、PNG 格式，最大 5MB</div>
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg">
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>AI 正在处理中，请稍候...</p>
+        </div>
+        
+        <div class="preview-section" id="previewSection">
+            <div class="preview-container">
+                <div class="preview-box">
+                    <h3>📷 原图</h3>
+                    <img id="originalImage" class="preview-image" alt="原图">
+                </div>
+                <div class="preview-box">
+                    <h3>✨ 处理后</h3>
+                    <img id="resultImage" class="preview-image" alt="处理后">
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn btn-primary" id="downloadBtn">⬇️ 下载透明背景图片</button>
+                <button class="btn btn-secondary" id="resetBtn">🔄 处理新图片</button>
+            </div>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="examples">
+            <h3>💡 快速体验 - 点击示例图片</h3>
+            <div class="example-grid">
+                <div class="example-item" data-type="person">👤</div>
+                <div class="example-item" data-type="product">📦</div>
+                <div class="example-item" data-type="animal">🐕</div>
+                <div class="example-item" data-type="car">🚗</div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2024 Image Background Remover | 免费使用</p>
+        </footer>
+    </div>
+    
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const previewSection = document.getElementById('previewSection');
+        const originalImage = document.getElementById('originalImage');
+        const resultImage = document.getElementById('resultImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const error = document.getElementById('error');
+        
+        const API_URL = '/api/remove-bg';
+        
+        // 点击上传区域
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        // 文件选择
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+        
+        // 拖拽上传
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+        
+        // 处理文件
+        async function handleFile(file) {
+            // 验证文件类型
+            if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+                showError('请上传 JPG 或 PNG 格式的图片');
+                return;
+            }
+            
+            // 验证文件大小 (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showError('图片大小不能超过 5MB');
+                return;
+            }
+            
+            hideError();
+            
+            // 显示原图预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                originalImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // 显示加载状态
+            uploadArea.classList.add('hidden');
+            loading.classList.add('active');
+            
+            try {
+                const formData = new FormData();
+                formData.append('image_file', file);
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || '处理失败，请重试');
+                }
+                
+                // 获取处理后的图片
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                resultImage.src = url;
+                
+                // 显示结果
+                loading.classList.remove('active');
+                previewSection.classList.add('active');
+                
+                // 设置下载按钮
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `removed-bg-${Date.now()}.png`;
+                    a.click();
+                };
+                
+            } catch (err) {
+                loading.classList.remove('active');
+                uploadArea.classList.remove('hidden');
+                showError(err.message || '处理失败，请检查网络连接后重试');
+            }
+        }
+        
+        // 重置
+        resetBtn.addEventListener('click', () => {
+            previewSection.classList.remove('active');
+            uploadArea.classList.remove('hidden');
+            fileInput.value = '';
+            originalImage.src = '';
+            resultImage.src = '';
+            hideError();
+        });
+        
+        // 示例点击
+        document.querySelectorAll('.example-item').forEach(item => {
+            item.addEventListener('click', () => {
+                showError('示例功能需要配置示例图片，请先上传自己的图片体验');
+            });
+        });
+        
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('active');
+        }
+        
+        function hideError() {
+            error.classList.remove('active');
+        }
+    </script>
+</body>
+</html>
