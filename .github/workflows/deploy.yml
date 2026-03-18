@@ -1,0 +1,30 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 7f89a7f424cc4a66c8edcfc56d6b91da
+          command: pages deploy dist --project-name=image-bg-remover
+          
+      - name: Add REMOVE_BG_API_KEY secret
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 7f89a7f424cc4a66c8edcfc56d6b91da
+          command: pages secret put REMOVE_BG_API_KEY --project-name=image-bg-remover
+          stdin: ${{ secrets.REMOVE_BG_API_KEY }}
