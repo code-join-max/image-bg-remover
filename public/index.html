@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Background Remover - 智能抠图工具</title>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         * {
             margin: 0;
@@ -234,17 +236,76 @@
             transform: scale(1.05);
         }
         
-        footer {
-            text-align: center;
-            padding: 40px 0;
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             color: white;
-            opacity: 0.8;
+        }
+        
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+        }
+        
+        .user-name {
+            font-size: 0.9rem;
+        }
+        
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .login-section {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        #g_id_signin {
+            display: none;
+        }
+        
+        #g_id_signin.visible {
+            display: block;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
+            <div class="user-menu" id="userMenu">
+                <!-- 登录区域 -->
+                <div id="loginSection" class="login-section">
+                    <div id="g_id_signin"></div>
+                </div>
+                <!-- 用户信息区域 -->
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <img id="userAvatar" class="user-avatar" src="" alt="头像">
+                    <span id="userName" class="user-name"></span>
+                    <button class="logout-btn" id="logoutBtn">退出</button>
+                </div>
+            </div>
             <h1>🎨 Image Background Remover</h1>
             <p>AI 智能抠图工具 - 一键移除图片背景</p>
         </header>
@@ -424,6 +485,97 @@
         function hideError() {
             error.classList.remove('active');
         }
+        
+        // ========== Google OAuth 登录功能 ==========
+        const GOOGLE_CLIENT_ID = '254445521090-iiuop3q28sshhvpaab6idm4mcsr56nqj.apps.googleusercontent.com';
+        
+        // 检查登录状态
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/session');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    showUserInfo(data.user);
+                } else {
+                    showLoginButton();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showLoginButton();
+            }
+        }
+        
+        // 显示登录按钮
+        function showLoginButton() {
+            document.getElementById('userInfo').style.display = 'none';
+            
+            // 初始化 Google Sign-In
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleResponse,
+                auto_select: false,
+                cancel_on_tap_outside: true
+            });
+            
+            google.accounts.id.renderButton(
+                document.getElementById('g_id_signin'),
+                { 
+                    theme: 'outline', 
+                    size: 'large',
+                    text: 'signin_with',
+                    shape: 'pill'
+                }
+            );
+            
+            document.getElementById('g_id_signin').classList.add('visible');
+        }
+        
+        // 处理 Google 登录响应
+        async function handleGoogleResponse(response) {
+            try {
+                const res = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                
+                const data = await res.json();
+                
+                if (data.success) {
+                    showUserInfo(data.user);
+                } else {
+                    alert('登录失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('Login failed:', error);
+                alert('登录失败，请重试');
+            }
+        }
+        
+        // 显示用户信息
+        function showUserInfo(user) {
+            document.getElementById('g_id_signin').classList.remove('visible');
+            document.getElementById('userAvatar').src = user.picture;
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userInfo').style.display = 'flex';
+        }
+        
+        // 退出登录
+        async function logout() {
+            try {
+                await fetch('/api/auth/session', { method: 'DELETE' });
+                location.reload();
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+        
+        // 页面加载时检查登录状态
+        checkAuthStatus();
+        
+        // 绑定退出按钮
+        document.getElementById('logoutBtn')?.addEventListener('click', logout);
     </script>
 </body>
 </html>

@@ -1,7 +1,18 @@
-name = "image-bg-remover"
+name = "image-background-remover"
 compatibility_date = "2024-03-18"
 pages_build_output_dir = "public"
 
-# 环境变量（生产环境需要在 Cloudflare Dashboard 中设置）
+# KV 命名空间 - 用于存储会话
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "684313ddfb1d4fd9a31280999e93b755"
+
+# D1 数据库 - 用于存储用户信息（可选）
+# 如果没有 D1 权限，可以注释掉这部分，代码会降级使用内存存储
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "image-bg-remover-db"
+# database_id = "your-d1-database-id"
+
 [vars]
-# REMOVE_BG_API_KEY = "your_api_key_here"
+GOOGLE_CLIENT_ID = "254445521090-iiuop3q28sshhvpaab6idm4mcsr56nqj.apps.googleusercontent.com"
